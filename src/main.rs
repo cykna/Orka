@@ -1,4 +1,6 @@
 use clap::Parser;
+use nix::spawn::{PosixSpawnAttr, PosixSpawnFileActions};
+use std::ffi::CStr;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -7,11 +9,16 @@ struct OrkaCli {
     pub exec: PathBuf,
 }
 
-fn main() -> std::io::Result<()> {
+fn main() -> color_eyre::Result<()> {
     let cli = OrkaCli::parse();
-    let child_result = std::process::Command::new(cli.exec).output()?;
-
-    println!("{:?}", child_result.status);
+    let pid = nix::spawn::posix_spawn(
+        &cli.exec,
+        &PosixSpawnFileActions::init()?,
+        &PosixSpawnAttr::init()?,
+        &[] as &[&CStr],
+        &[] as &[&CStr],
+    )?;
+    println!("{:?}", pid);
 
     Ok(())
 }
