@@ -42,7 +42,7 @@ const STACK_SIZE: usize = 1024 * 1024; //1mb
 
 fn main() -> color_eyre::Result<()> {
     let cli = OrkaCli::parse();
-    let orka = Orka::new();
+    let orka = Orka::<4096>::new();
 
     let process = orka.create_process(ProcessArgs {
         name: cli.name(),
