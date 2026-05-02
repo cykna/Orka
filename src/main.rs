@@ -9,7 +9,7 @@ use crate::orka::{Orka, ProcessArgs};
 struct OrkaCli {
     #[arg(short, long)]
     pub exec: String,
-    #[arg(long)]
+    #[arg(long, allow_hyphen_values = true)]
     pub arguments: Vec<String>,
 }
 

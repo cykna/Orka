@@ -1,4 +1,4 @@
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 
 use color_eyre::eyre::Result;
 use nix::{
@@ -28,8 +28,9 @@ impl Orka {
         let child = unsafe {
             nix::sched::clone(
                 Box::new(move || {
-                    let v = execve(&args.name, &args.args, &args.args).unwrap();
-                    println!("{v} {:?}", std::io::Error::last_os_error());
+                    let v = execve(&args.name, &args.args, &args.env);
+                    //This shit shouldnt execut if execve executes properly
+                    println!("{v:?} {:?}", std::io::Error::last_os_error());
                     0
                 }),
                 &mut args.stack,
