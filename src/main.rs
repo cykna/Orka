@@ -1,38 +1,50 @@
-use clap::Parser;
-use nix::{
-    libc::{SIGCHLD, execve},
-    sched::CloneFlags,
-    sys::wait::waitpid,
-};
-use std::ptr::null;
+mod orka;
+use std::ffi::CString;
 
+use clap::Parser;
+use nix::sys::wait::waitpid;
+
+use crate::orka::{Orka, ProcessArgs};
 #[derive(Parser, Debug)]
 struct OrkaCli {
     #[arg(short, long)]
     pub exec: String,
+    #[arg(long)]
+    pub arguments: Vec<String>,
 }
+
+impl OrkaCli {
+    pub fn name(&self) -> CString {
+        CString::new(&*self.exec).unwrap()
+    }
+    pub fn arguments(&self) -> Vec<CString> {
+        let mut out = vec![self.name()];
+        out.append(
+            &mut self
+                .arguments
+                .iter()
+                .map(|v| CString::new(&**v).unwrap())
+                .collect(),
+        );
+        out
+    }
+}
+
 const STACK_SIZE: usize = 1024 * 1024; //1mb
+
 fn main() -> color_eyre::Result<()> {
     let cli = OrkaCli::parse();
+    let orka = Orka::new();
 
-    let child = unsafe {
-        nix::sched::clone(
-            Box::new(move || {
-                let ptr = cli.exec.as_bytes().as_ptr() as *const i8;
-                let v = execve(ptr, null(), null());
-                println!("{v} Laburai");
-                0
-            }),
-            &mut [0; STACK_SIZE],
-            CloneFlags::CLONE_NEWPID | CloneFlags::CLONE_NEWNET,
-            Some(SIGCHLD),
-        )?
-    };
+    let process = orka.create_process(ProcessArgs {
+        name: cli.name(),
+        args: cli.arguments(),
+        env: Vec::new(),
+        stack: vec![0; STACK_SIZE],
+    })?;
 
-    let v = waitpid(child, None)?;
+    let v = waitpid(process, None)?;
     println!("{v:?}");
-
-    println!("{child}");
 
     Ok(())
 }
