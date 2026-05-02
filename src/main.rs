@@ -10,7 +10,9 @@ struct OrkaCli {
     #[arg(short, long)]
     pub exec: String,
     #[arg(long, allow_hyphen_values = true)]
-    pub arguments: Vec<String>,
+    pub arg: Vec<String>,
+    #[arg(long, allow_hyphen_values = true)]
+    pub env: Vec<String>,
 }
 
 impl OrkaCli {
@@ -21,12 +23,18 @@ impl OrkaCli {
         let mut out = vec![self.name()];
         out.append(
             &mut self
-                .arguments
+                .arg
                 .iter()
                 .map(|v| CString::new(&**v).unwrap())
                 .collect(),
         );
         out
+    }
+    pub fn env_vars(&self) -> Vec<CString> {
+        self.env
+            .iter()
+            .map(|v| CString::new(&**v).unwrap())
+            .collect()
     }
 }
 
@@ -39,7 +47,7 @@ fn main() -> color_eyre::Result<()> {
     let process = orka.create_process(ProcessArgs {
         name: cli.name(),
         args: cli.arguments(),
-        env: Vec::new(),
+        env: cli.env_vars(),
         stack: vec![0; STACK_SIZE],
     })?;
 
