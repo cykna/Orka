@@ -65,6 +65,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run cargo-audit
-        uses: actions-rs/audit-check@v1
+        uses: actions-rust-lang/audit@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

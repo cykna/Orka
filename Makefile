@@ -16,18 +16,14 @@ NC := \033[0m # No Color
 .PHONY: all
 all: build
 
-# Run the application with path argument
-.PHONY: run
-run:
-	@echo "$(GREEN)Running $(BINARY_NAME) with path: $(PATH_ARG)$(NC)"
-	$(CARGO) run -- $(PATH_ARG)
+
 
 # Build the project
 .PHONY: build
 build:
 	@echo "$(YELLOW)Building $(BINARY_NAME)...$(NC)"
 	$(CARGO) build --release
-	@echo "$(GREEN)Build complete: $(TARGET_DIR)/release/$(BINARY_NAME)$(NC)"
+	@echo "\n$(GREEN)Build complete: $(TARGET_DIR)/release/$(BINARY_NAME)$(NC)"
 
 # Run tests
 .PHONY: test
@@ -80,7 +76,6 @@ format:
 .PHONY: help
 help:
 	@echo "$(GREEN)Available targets:$(NC)"
-	@echo "  $(YELLOW)make run path=PATH$(NC)     - Run the application with specified path"
 	@echo "  $(YELLOW)make build$(NC)            - Build the project in release mode"
 	@echo "  $(YELLOW)make test$(NC)             - Run all tests"
 	@echo "  $(YELLOW)make check$(NC)            - Run fmt, clippy, and test (CI/CD checks)"
@@ -89,4 +84,4 @@ help:
 	@echo "  $(YELLOW)make clean$(NC)            - Clean build artifacts"
 	@echo "  $(YELLOW)make format$(NC)           - Auto-format code"
 	@echo "  $(YELLOW)make audit$(NC)            - Run security audit"
-	@echo "  $(YELLOW)make help$(NC)             - Show this help message
+	@echo "  $(YELLOW)make help$(NC)             - Show this help message"
