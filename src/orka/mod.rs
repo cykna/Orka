@@ -9,7 +9,7 @@ use nix::{
     unistd::execve,
 };
 
-use crate::orka::process::{Process, ProcessArgs};
+pub use process::*;
 
 pub struct Orka<const PAGE_SIZE: usize = 4096>;
 
@@ -18,7 +18,7 @@ impl<const PAGE_SIZE: usize> Orka<PAGE_SIZE> {
         Self
     }
 
-    ///Allocates a new stack with the given amount of `page_amount`. Returns the base and the top addresses of it.
+    ///Allocates a new stack with the given amount of `page_amount`. Returns the top and the bottom addresses of it.
     pub fn allocate_stack(page_amount: usize) -> (*mut u8, *mut u8) {
         let total = PAGE_SIZE * (page_amount + 1);
         let ptr = unsafe {
@@ -32,13 +32,14 @@ impl<const PAGE_SIZE: usize> Orka<PAGE_SIZE> {
         .unwrap();
         unsafe { mprotect(ptr, PAGE_SIZE, ProtFlags::PROT_NONE).unwrap() };
 
-        // retorna o topo (end of buffer)
+        // returns top (end of buffer)
         let ptr = ptr.as_ptr() as *mut _;
         (ptr, unsafe { ptr.add(total) })
     }
 
-    pub fn create_process<'a>(&self, args: ProcessArgs) -> Result<Process<'a>> {
-        let (base, top) = Self::allocate_stack(args.stack_size);
+    pub fn create_process<'a>(&'a self, args: ProcessArgs) -> Result<Process<'a>> {
+        let (top, bottom) = Self::allocate_stack(args.stack_size);
+        let stack = unsafe { std::slice::from_raw_parts_mut(top, bottom.addr() - top.addr()) };
         let child = unsafe {
             nix::sched::clone(
                 Box::new(move || {
@@ -47,12 +48,12 @@ impl<const PAGE_SIZE: usize> Orka<PAGE_SIZE> {
                     println!("{v:?} {:?}", std::io::Error::last_os_error());
                     0
                 }),
-                std::slice::from_raw_parts_mut(top, 0),
+                stack,
                 CloneFlags::CLONE_NEWPID,
                 Some(SIGCHLD),
             )
         }?;
-        let process = Process::new(child, (base, top));
+        let process = Process::new(child, (top, bottom));
         Ok(process)
     }
 }

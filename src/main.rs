@@ -1,8 +1,6 @@
 mod orka;
-use std::ffi::CString;
-
 use clap::Parser;
-use nix::sys::wait::waitpid;
+use std::ffi::CString;
 
 use crate::orka::{Orka, ProcessArgs};
 #[derive(Parser, Debug)]
@@ -49,7 +47,7 @@ fn main() -> color_eyre::Result<()> {
         stack_size: 256,
     })?;
 
-    let v = waitpid(process, None)?;
+    let v = process.wait()?;
     println!("{v:?}");
 
     Ok(())

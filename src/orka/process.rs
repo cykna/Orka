@@ -1,7 +1,7 @@
 use std::{ffi::CString, marker::PhantomData, ptr::NonNull};
 
 use nix::{
-    sys::wait::{WaitPidFlag, WaitStatus, waitpid},
+    sys::wait::{WaitStatus, waitpid},
     unistd::Pid,
 };
 
@@ -20,11 +20,11 @@ pub struct Process<'a> {
     pid: Pid,
     stack_bottom: *mut u8,
     stack_top: *mut u8,
-    phantom: PhantomData<&'a u8>,
+    phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> Process<'a> {
-    pub fn new(pid: Pid, (bottom, top): (*mut u8, *mut u8)) -> Self {
+    pub fn new(pid: Pid, (top, bottom): (*mut u8, *mut u8)) -> Self {
         Self {
             pid,
             stack_bottom: bottom,
@@ -33,6 +33,7 @@ impl<'a> Process<'a> {
         }
     }
 
+    ///Waits for this process to change its status
     pub fn wait(&self) -> color_eyre::eyre::Result<WaitStatus> {
         waitpid(self.pid, None).map_err(|e| e.into())
     }
@@ -43,7 +44,7 @@ impl<'a> Drop for Process<'a> {
         unsafe {
             nix::sys::mman::munmap(
                 NonNull::new(self.stack_top as *mut _).unwrap(), //stack top since it grows downwards.
-                self.stack_bottom.sub(self.stack_top.addr()).addr(), //top <= bottom, then bottom - top >= 0
+                self.stack_bottom.addr() - self.stack_top.addr(), //top <= bottom, then bottom - top >= 0
             )
             .unwrap()
         }
