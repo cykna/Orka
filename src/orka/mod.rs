@@ -20,6 +20,7 @@ impl<const PAGE_SIZE: usize> Orka<PAGE_SIZE> {
 
     ///Allocates a new stack with the given amount of `page_amount`. Returns the top and the bottom addresses of it.
     pub fn allocate_stack(page_amount: usize) -> (*mut u8, *mut u8) {
+        debug_assert!(PAGE_SIZE > 0);
         let total = PAGE_SIZE * (page_amount + 1);
         let ptr = unsafe {
             nix::sys::mman::mmap_anonymous(
