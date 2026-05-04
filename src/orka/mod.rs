@@ -1,23 +1,15 @@
-use std::{ffi::CString, num::NonZero};
+mod process;
+use std::num::NonZero;
 
 use color_eyre::eyre::Result;
 use nix::{
     libc::SIGCHLD,
     sched::CloneFlags,
     sys::mman::{MapFlags, ProtFlags, mprotect},
-    unistd::{Pid, execve},
+    unistd::execve,
 };
 
-pub struct ProcessArgs {
-    ///The path of the process to be runned on a different namespace
-    pub name: CString,
-    ///The arguments the process will receive. If this is ["hello world"], and `name` is `echo`, this is the same as `echo "hello world"`
-    pub args: Vec<CString>,
-    ///The environment values of this process
-    pub env: Vec<CString>,
-    ///The number of pages the stack will have.
-    pub stack_size: usize,
-}
+use crate::orka::process::{Process, ProcessArgs};
 
 pub struct Orka<const PAGE_SIZE: usize = 4096>;
 
@@ -45,7 +37,7 @@ impl<const PAGE_SIZE: usize> Orka<PAGE_SIZE> {
         (ptr, unsafe { ptr.add(total) })
     }
 
-    pub fn create_process(&self, args: ProcessArgs) -> Result<Pid> {
+    pub fn create_process<'a>(&self, args: ProcessArgs) -> Result<Process<'a>> {
         let (base, top) = Self::allocate_stack(args.stack_size);
         let child = unsafe {
             nix::sched::clone(
@@ -60,6 +52,7 @@ impl<const PAGE_SIZE: usize> Orka<PAGE_SIZE> {
                 Some(SIGCHLD),
             )
         }?;
-        Ok(child)
+        let process = Process::new(child, (base, top));
+        Ok(process)
     }
 }

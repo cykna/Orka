@@ -38,8 +38,6 @@ impl OrkaCli {
     }
 }
 
-const STACK_SIZE: usize = 1024 * 1024; //1mb
-
 fn main() -> color_eyre::Result<()> {
     let cli = OrkaCli::parse();
     let orka = Orka::<4096>::new();
@@ -48,7 +46,7 @@ fn main() -> color_eyre::Result<()> {
         name: cli.name(),
         args: cli.arguments(),
         env: cli.env_vars(),
-        stack: vec![0; STACK_SIZE],
+        stack_size: 256,
     })?;
 
     let v = waitpid(process, None)?;
